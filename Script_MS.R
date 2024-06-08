@@ -70,7 +70,7 @@ Chla_after_ice_out <- read_excel(paste0(dir, "/Chla_after_ice_out.xlsx"))
 Chla_below_ice <- read_excel(paste0(dir, "/Chla_below_ice.xlsx"))
 
 #Write summary data
-Big_data_summary <- read_excel(paste0(dir, "/Summary_figure_data.xlsx")) 
+Big_data_summary <- read_excel(paste0(dir, "/Big_data_summary.xlsx")) 
 
 #Precipitation data from all stations
 #Data from Svanberga precip and Vallnora precip
@@ -221,11 +221,11 @@ p_final_production_snow_depth <- annotate_figure(p_chla_snow, left = text_grob(e
                                                                           bottom = text_grob("Snow depth (cm)"))
 # Write plot into folder
 setwd(fig_dir)
-pdf("Figure_2.pdf", width = 6, height = 2.5)
+pdf("Figure_1.pdf", width = 6, height = 2.5)
 p_final_production_snow_depth
 
 setwd(fig_dir)
-tiff("Figure_2.tiff", unit = "cm", height = 4, width = 15, res = 600)
+tiff("Figure_1.tiff", unit = "cm", height = 4, width = 15, res = 600)
 p_final_production_snow_depth
 dev.off()
 setwd(dir)
@@ -277,12 +277,12 @@ p_final_DOY_box <- p_Ice_period/p_ice_phenology + plot_layout(guides = "collect"
   theme(plot.tag = element_text(face = 'bold'))
 
 setwd(fig_dir)
-pdf("Figure_4.pdf", width=2*2.54, height=2*2.54)
+pdf("Figure_2.pdf", width=2*2.54, height=2*2.54)
 p_final_DOY_box 
 dev.off()
 
 setwd(fig_dir)
-tiff("Figure_4.tiff", width=12, height=9, unit = "cm", res = 600)
+tiff("Figure_2.tiff", width=12, height=9, unit = "cm", res = 600)
 p_final_DOY_box 
 dev.off()
 
@@ -335,7 +335,7 @@ Ice_phenology_lm_table$Explanatory <- factor(Ice_phenology_lm_table$Explanatory,
 
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 FIGURE 3: MIXOTROPHY
+#                                 FIGURE 3: TROPHIC MODES
 #------------------------------------------------------------------------------------------------------------
 #CALCULATE FUNCTIONAL GROUP - JOIN MEAN WITH MEAN
 
@@ -656,12 +656,12 @@ p_final_snow_depth_NMDS <- (p9/p10) +
 
 #Write figures as pdf and tiff
 setwd(fig_dir)
-pdf("Figure_5.pdf", width=2*2.54, height=2*2.54)
+pdf("Figure_4.pdf", width=2*2.54, height=2*2.54)
 p_final_snow_depth_NMDS 
 dev.off()
 
 setwd(fig_dir)
-tiff("Figure_5.tiff", width=14, height=16, unit = "cm", res = 600)
+tiff("Figure_4.tiff", width=14, height=16, unit = "cm", res = 600)
 p_final_snow_depth_NMDS 
 dev.off()
 
@@ -682,11 +682,11 @@ Permanova_ice_phenology <- as.data.frame(Permanova_ice_phenology[1:5]) %>% mutat
 #Plot precipitation between the meterological sites
 precip_plot <- ggplot() + geom_point(precip_data, mapping = aes(x = Rain.y, y = Rain.x), alpha = 0.5) + labs(y = "", x = "Vallnora prec. (mm)") + 
   theme_bw() + geom_abline(mapping = aes(intercept = 0, slope = 1), linetype = "dashed") + 
-  stat_cor(precip_data, mapping = aes(x = Rain.y, y = Rain.x), method="pearson") + theme(axis.text.y = element_blank())
+  stat_cor(precip_data, mapping = aes(x = Rain.y, y = Rain.x), cor.coef.name = "r", method="pearson") + theme(axis.text.y = element_blank())
 
 precip_plot2 <- ggplot() + geom_point(precip_data2, mapping = aes(x = Rain.y, y = Rain.x), alpha = 0.5) + labs(y = "Svanberga prec. (mm)", x = "Norrveda prec. (mm)") + 
   theme_bw() + geom_abline(mapping = aes(intercept = 0, slope = 1), linetype = "dashed") + 
-  stat_cor(precip_data2, mapping = aes(x = Rain.y, y = Rain.x), method="pearson")
+  stat_cor(precip_data2, mapping = aes(x = Rain.y, y = Rain.x), cor.coef.name = "r", method="pearson")
 #Final plot
 p_final_precip <- (precip_plot2|precip_plot) & plot_annotation(tag_levels = 'a') &
   theme(plot.tag.position = "topleft",
@@ -696,11 +696,17 @@ p_final_precip <- (precip_plot2|precip_plot) & plot_annotation(tag_levels = 'a')
 
 p_final_precip
 
-fig_dir <- "G:/My Drive/Ellinors documents; supervisors/Mixotrophy - Erken (Paper II)/Figures"
+# Write plot into folder
 setwd(fig_dir)
-tiff("Figure_S1.tiff", units="cm", width=17, height=6.5, res=600)
-p_final_precip 
+pdf("Figure_S1.pdf", width = 5, height = 4)
+p_final_precip
 dev.off()
+
+setwd(fig_dir)
+tiff("Figure_S1.tiff", unit = "cm", height = 7, width = 15, res = 600)
+p_final_precip
+dev.off()
+setwd(dir)
 
 #--------------------------------------------------------------------------------------------------------------
 #                                 SUPPLEMENTARY FIGURE 2: ICE AND SNOW THICKNESS RELATION
@@ -719,6 +725,17 @@ p_snow_ice_cor <- ggplot(Snow_ice_data, aes(Mean_ice, y=Mean_snow)) +
   lims(x = c(0,NA),
        y = c(0,NA))
 
+# Write plot into folder
+setwd(fig_dir)
+pdf("Figure_S2.pdf", width = 6, height = 2.5)
+p_snow_ice_cor
+dev.off()
+
+setwd(fig_dir)
+tiff("Figure_S2.tiff", unit = "cm", height = 4, width = 15, res = 600)
+p_snow_ice_cor
+dev.off()
+setwd(dir)
 #--------------------------------------------------------------------------------------------------------------
 #                                 SUPPLEMENTARY FIGURE 3: ICE AND CHLA
 #------------------------------------------------------------------------------------------------------------
@@ -822,6 +839,7 @@ p_final_production_ice_thickness <- annotate_figure(p_chla_ice, left = text_grob
 setwd(fig_dir)
 pdf("Figure_S3.pdf", width = 6, height = 2.5)
 p_final_production_ice_thickness
+dev.off()
 
 setwd(fig_dir)
 tiff("Figure_S3.tiff", unit = "cm", height = 4, width = 15, res = 600)
@@ -918,13 +936,11 @@ p_zoops_phyto_final <- ggarrange(p_zoops_phyto, p_temp_light, p_nutrients, ncol 
 
 #Write the figure as pdf and tiff
 setwd(fig_dir)
-pdf("Figure_S5.pdf", width = 6, height = 6) #Set new windo size and replot whatever plot you just made. 
+pdf("Figure_S4.pdf", width = 6, height = 6) #Set new windo size and replot whatever plot you just made. 
 p_zoops_phyto_final
 dev.off()
-setwd(dir)
 
-setwd(fig_dir)
-tiff("Figure_S5.tiff", width = 13, height = 13, unit = "cm", res = 600) #Set new windo size and replot whatever plot you just made. 
+tiff("Figure_S4.tiff", width = 13, height = 13, unit = "cm", res = 600) #Set new windo size and replot whatever plot you just made. 
 p_zoops_phyto_final
 dev.off()
 setwd(dir)
@@ -948,7 +964,7 @@ Regression_data <- Regression_data %>% group_by(Genus, Month) %>% mutate(Count =
 #Calculate number of taxa without enough data
 data_test <- Regression_data %>% filter(mean_biomass > 0) %>% filter(Month == 4) 
 data_test <- unique(data_test$Genus)
-#------------------------------------------------------------------------------------------------------------#
+
 #Filter when biomass > 0 are more than 5 occasions to run correlations
 Regression_data <- Regression_data %>% group_by(Genus, Month) %>% filter(n >= 5 & Count == "Yes") %>%
   mutate(Ice_off_DOY = as.numeric(Ice_off_DOY),
@@ -987,7 +1003,7 @@ Taxa_regressions <- ggplot(filter(Data_for_plotting, Ice_phenology != "Length Ic
   guides(color = guide_legend(override.aes = list(size = 3)))
 
 setwd(fig_dir)
-tiff("Figure_S6.tiff", width = 30, height = 17, units = "cm", res = 600)
+tiff("Figure_S5.tiff", width = 30, height = 17, units = "cm", res = 600)
 Taxa_regressions
 dev.off()
 setwd(dir)
@@ -1118,10 +1134,13 @@ p_final_snow_depth_NMDS <- (p9/p10) +
         plot.tag = element_text(size = 8, hjust = 0, vjust = 0)) &
   theme(plot.tag = element_text(face = 'bold'),
         legend.position = "top")
+
+
 setwd(fig_dir)
 tiff("Figure_S6.tiff", units="cm", width=15, height=15, res=600)
 p_final_snow_depth_NMDS
 dev.off()
+setwd(dir)
 
 # PERMANOVA
 Permanova_env <- NMDS_env %>% mutate(Month = as.numeric(Month_abb))
