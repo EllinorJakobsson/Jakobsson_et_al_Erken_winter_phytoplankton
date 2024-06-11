@@ -338,7 +338,6 @@ Ice_phenology_lm_table$Explanatory <- factor(Ice_phenology_lm_table$Explanatory,
 #                                 FIGURE 3: TROPHIC MODES
 #------------------------------------------------------------------------------------------------------------
 #CALCULATE FUNCTIONAL GROUP - JOIN MEAN WITH MEAN
-
 #Calculate sum of biomass per dat and genus
 Phyto_data <- Phytoplankton_below_ice %>% group_by(Genus, Winter_year, Month, Day, Functional_group) %>% dplyr::summarise(across(biomass_ug_l, list(sum)))
 #Calculate mean biomass per genera and month within the ice cover period
@@ -347,7 +346,7 @@ Mean_phytoplankton_genera <- Phyto_data %>% group_by(Genus, Winter_year, Month, 
 #Left join by monthly mean
 Phyto_snow <- left_join(Mean_phytoplankton_genera, Mean_snow, by = c("Month", "Winter_year"))
 Phyto_snow <- Phyto_snow %>% mutate(Genus = case_when(Genus == "<NA>" ~ "Other", T~Genus))
-#Remove NA of snow 
+#Remove NA of snow
 Phyto_snow <- Phyto_snow %>% drop_na(Mean_snow)
 #Make new column called taxa from genus and remove unknown genera
 Phyto_snow$Taxa <- Phyto_snow$Genus
@@ -373,7 +372,6 @@ Perc <- Perc %>% filter(Month == 01 | Month == 02 | Month == 03) %>% mutate(Mont
 
 #Make a new column with month abbreviated
 Perc$Month_abb <- month.abb[Perc$Month]
-
 #Put correct order of groups for plotting
 Perc <- Perc %>% mutate(Functional_group = case_when(Functional_group == "Autotroph" ~ "Autotrophs",
                                                                         Functional_group == "Mixotroph" ~ "Mixotrophs",
