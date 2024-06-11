@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------------------------------------
 # Script by: Ellinor Jakobsson, 2023-2024
 # Script for plotting all figures and doing all analyses in manuscript:
-#"Effects of changing snow- and ice cover conditions on phytoplankton biomass and community composition in Lake Erken"
+#"Effects of changing snow- and ice cover conditions on phytoplankton biomass and community composition in a mesotrophic lake"
 
 #--------------------------------------------------------------------------------------------------------------
 #                                 IMPORT DATA
@@ -64,7 +64,7 @@ Phytoplankton_below_ice <- read_excel(paste(dir, "/Phytoplankton_below_ice.xlsx"
 Phytoplankton_after_ice_out_mean <- read_excel(paste0(dir, "/Phytoplankton_after_ice_out.xlsx"))
 
 #Chla data after ice-out 1997-2019
-Chla_after_ice_out <- read_excel(paste0(dir, "/Chla_after_ice_out.xlsx"))
+Chla_after_ice_out <- read_excel(paste0(dir, "/Chla_after_ice_out_mean.xlsx"))
 
 #Write chla within ice-period
 Chla_below_ice <- read_excel(paste0(dir, "/Chla_below_ice.xlsx"))
@@ -74,10 +74,10 @@ Big_data_summary <- read_excel(paste0(dir, "/Big_data_summary.xlsx"))
 
 #Precipitation data from all stations
 #Data from Svanberga precip and Vallnora precip
-precip_data <- read_excel(paste0(dir, "/precip_data.xlsx"))
+Vallnora_precip <- read_excel(paste0(dir, "/Vallnora_precip.xlsx"))
 
 #Data from Svanberga precip and Norrveda precip
-precip_data2 <- read_excel(paste0(dir, "/precip_data2.xlsx")) 
+Norrveda_precip <- read_excel(paste0(dir, "/Norrveda_precip.xlsx")) 
 
 #Useful functions and defined parameters for the script
 #Read function to replace NA with 0. Used later on.
@@ -233,36 +233,18 @@ setwd(dir)
 #--------------------------------------------------------------------------------------------------------------
 #                                 FIGURE 2: ICE PHENOLOGY SCATTERPLOT
 #------------------------------------------------------------------------------------------------------------
-#Calculate mean chla per month and winter
-Chla_after_ice_out_mean <- Chla_after_ice_out %>% select(`Chl a_µg/l`, Winter_year, Month) %>%
-  group_by(Month, Winter_year) %>%
-  reframe(mean_chla = mean(`Chl a_µg/l`))
-#Join mean chla with ice cover period data again
-Chla_after_ice_out_mean <- left_join(Chla_after_ice_out_mean, Ice_cover_period, by = c("Winter_year"), relationship = "many-to-many")
-#Abbreviate months from numbers to name
-Chla_after_ice_out_mean$Month_abb <- month.abb[Chla_after_ice_out_mean$Month]
-#Order months for plot
-Chla_after_ice_out_mean$Month_abb <- factor(Chla_after_ice_out_mean$Month_abb, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
-#Make into DOY
-Chla_after_ice_out_mean$Ice_off_DOY <- yday(Chla_after_ice_out_mean$`Ice break up`)
-Chla_after_ice_out_mean$Ice_on_DOY <- yday(Chla_after_ice_out_mean$`Beginning of ice cover`)
-Chla_after_ice_out_mean <- Chla_after_ice_out_mean %>% separate(`Ice break up`, into = c("Thaw_Year", "Thaw_Month", "Thaw_Day"))
-Chla_after_ice_out_mean <- Chla_after_ice_out_mean %>% separate(`Beginning of ice cover`, into = c("Freeze_Year", "Freeze_Month", "Freeze_Day"))
-Chla_after_ice_out_mean <- Chla_after_ice_out_mean %>% mutate(Ice_on_DOY = case_when(Freeze_Month == "12" | Freeze_Month == "11" ~ Ice_on_DOY-365, T~Ice_on_DOY))
-Chla_after_ice_out_mean <- Chla_after_ice_out_mean %>% filter(Month_abb == "Apr" | Month_abb == "May" | Month_abb == "Jun")
-
 #Regression plots on ice on and ice off DOY
-p_ice_phenology <- ggplot() + geom_point(Chla_after_ice_out_mean, mapping = aes(x = Ice_off_DOY, y = mean_chla), col = "#660000", size = 2, shape = 16) + 
-  geom_point(Chla_after_ice_out_mean, mapping = aes(x = Ice_on_DOY, y = mean_chla), col = "#000099", size = 2, shape = 17) +
-  geom_smooth(Chla_after_ice_out_mean, mapping = aes(x = Ice_off_DOY, y = mean_chla), col = "#660000", method = "lm", se = F, alpha = 0.5, linewidth = 0.3, linetype="dashed") + 
-  geom_smooth(Chla_after_ice_out_mean, mapping = aes(x = Ice_on_DOY, y = mean_chla), col = "#000099", method = "lm", se = F, alpha = 0.5, linewidth = 0.3, linetype="dashed") + 
+p_ice_phenology <- ggplot() + geom_point(Chla_after_ice_out_mean, mapping = aes(x = Ice_off_DOY, y = Mean_chla), col = "#660000", size = 2, shape = 16) + 
+  geom_point(Chla_after_ice_out_mean, mapping = aes(x = Ice_on_DOY, y = Mean_chla), col = "#000099", size = 2, shape = 17) +
+  geom_smooth(Chla_after_ice_out_mean, mapping = aes(x = Ice_off_DOY, y = Mean_chla), col = "#660000", method = "lm", se = F, alpha = 0.5, linewidth = 0.3, linetype="dashed") + 
+  geom_smooth(Chla_after_ice_out_mean, mapping = aes(x = Ice_on_DOY, y = Mean_chla), col = "#000099", method = "lm", se = F, alpha = 0.5, linewidth = 0.3, linetype="dashed") + 
   facet_wrap(~Month_abb, scales = "free_y") + theme_bw() + 
   labs(y = expression(paste("Chl-"*alpha*" ("*mu*"g "*L^-1*")"))) + 
   theme(strip.text = element_text(face = "bold")) + 
   labs(x = "Day-of-the-year")
 
-p_Ice_period <- ggplot() + geom_smooth(Chla_after_ice_out_mean, mapping = aes(x = `Length Ice Cover (days)`, y = mean_chla), col = "black",method = "lm", se = F, linewidth = 0.5, alpha = 0.5, linetype="dashed") +
-  geom_point(Chla_after_ice_out_mean, mapping = aes(x = `Length Ice Cover (days)`, y = mean_chla), col = "black", size = 2) +
+p_Ice_period <- ggplot() + geom_smooth(Chla_after_ice_out_mean, mapping = aes(x = `Length Ice Cover (days)`, y = Mean_chla), col = "black",method = "lm", se = F, linewidth = 0.5, alpha = 0.5, linetype="dashed") +
+  geom_point(Chla_after_ice_out_mean, mapping = aes(x = `Length Ice Cover (days)`, y = Mean_chla), col = "black", size = 2) +
   facet_wrap(~Month_abb, scales = "free_y") + theme_bw() +
   labs(y = expression(paste("Chl-"*alpha*" ("*mu*"g "*L^-1*")"))) + 
   theme(strip.text = element_text(face = "bold"))
@@ -288,34 +270,34 @@ dev.off()
 
 #Regressions on ice phenology
 # Rsqr values
-Ice_period_table_r <- Chla_after_ice_out_mean %>% group_by(Month) %>% lm_table(mean_chla ~ `Length Ice Cover (days)`) %>%
+Ice_period_table_r <- Chla_after_ice_out_mean %>% group_by(Month) %>% lm_table(Mean_chla ~ `Length Ice Cover (days)`) %>%
   select(Month, Rsqr_adj) %>% rename("R2" = "Rsqr_adj") %>%
   mutate(R2 = round(R2, 2))
 # p values
 Ice_period_table_p <- Chla_after_ice_out_mean  %>% nest(data = -c(Month)) %>%
-  mutate(model = map(data, ~lm(mean_chla ~ `Length Ice Cover (days)`, data = .)), tidied = map(model, tidy)) %>%
+  mutate(model = map(data, ~lm(Mean_chla ~ `Length Ice Cover (days)`, data = .)), tidied = map(model, tidy)) %>%
   unnest(tidied) %>% filter(term == "`Length Ice Cover (days)`") %>%
   select(Month, p.value) %>%
   rename("p" = "p.value") %>% mutate(p = round(p, 2))
 #---------------------------ICE ON DOY
 # Rsqr values
-Ice_on_table_r <- Chla_after_ice_out_mean %>% group_by(Month) %>% lm_table(mean_chla ~ Ice_on_DOY) %>%
+Ice_on_table_r <- Chla_after_ice_out_mean %>% group_by(Month) %>% lm_table(Mean_chla ~ Ice_on_DOY) %>%
   select(Month, Rsqr_adj) %>% rename("R2" = "Rsqr_adj") %>%
   mutate(R2 = round(R2, 2))
 # p values
 Ice_on_table_p <- Chla_after_ice_out_mean  %>% nest(data = -c(Month)) %>%
-  mutate(model = map(data, ~lm(mean_chla ~ Ice_on_DOY, data = .)), tidied = map(model, tidy)) %>%
+  mutate(model = map(data, ~lm(Mean_chla ~ Ice_on_DOY, data = .)), tidied = map(model, tidy)) %>%
   unnest(tidied) %>% filter(term == "Ice_on_DOY") %>% 
   select(Month, p.value) %>%
   rename("p" = "p.value") %>% mutate(p = round(p, 2))
 #---------------------------ICE OFF DOY
 # Rsqr values
-Ice_off_table_r <- Chla_after_ice_out_mean %>% group_by(Month) %>% lm_table(mean_chla ~ Ice_off_DOY) %>%
+Ice_off_table_r <- Chla_after_ice_out_mean %>% group_by(Month) %>% lm_table(Mean_chla ~ Ice_off_DOY) %>%
   select(Month, Rsqr_adj) %>% rename("R2" = "Rsqr_adj") %>%
   mutate(R2 = round(R2, 2))
 # p values
 Ice_off_table_p <- Chla_after_ice_out_mean  %>% nest(data = -c(Month)) %>%
-  mutate(model = map(data, ~lm(mean_chla ~ Ice_off_DOY, data = .)), tidied = map(model, tidy)) %>%
+  mutate(model = map(data, ~lm(Mean_chla ~ Ice_off_DOY, data = .)), tidied = map(model, tidy)) %>%
   unnest(tidied) %>% filter(term == "Ice_off_DOY") %>% 
   select(Month, p.value) %>%
   rename("p" = "p.value") %>% mutate(p = round(p, 2))
@@ -678,15 +660,15 @@ Permanova_ice_phenology <- as.data.frame(Permanova_ice_phenology[1:5]) %>% mutat
 #                                 SUPPLEMENTARY FIGURE 1: PRECIPITATION
 #------------------------------------------------------------------------------------------------------------
 #Plot precipitation between the meterological sites
-precip_plot <- ggplot() + geom_point(precip_data, mapping = aes(x = Rain.y, y = Rain.x), alpha = 0.5) + labs(y = "", x = "Vallnora prec. (mm)") + 
+p_Vallnora_precip <- ggplot() + geom_point(filter(Vallnora_precip), mapping = aes(x = Rain.y, y = Rain.x), alpha = 0.5) + labs(y = "", x = "Vallnora prec. (mm)") + 
   theme_bw() + geom_abline(mapping = aes(intercept = 0, slope = 1), linetype = "dashed") + 
-  stat_cor(precip_data, mapping = aes(x = Rain.y, y = Rain.x), cor.coef.name = "r", method="pearson") + theme(axis.text.y = element_blank())
+  stat_cor(Vallnora_precip, mapping = aes(x = Rain.y, y = Rain.x), cor.coef.name = "r", method="pearson") + theme(axis.text.y = element_blank())
 
-precip_plot2 <- ggplot() + geom_point(precip_data2, mapping = aes(x = Rain.y, y = Rain.x), alpha = 0.5) + labs(y = "Svanberga prec. (mm)", x = "Norrveda prec. (mm)") + 
+p_Norrveda_precip <- ggplot() + geom_point(Norrveda_precip, mapping = aes(x = Rain.y, y = Rain.x), alpha = 0.5) + labs(y = "Svanberga prec. (mm)", x = "Norrveda prec. (mm)") + 
   theme_bw() + geom_abline(mapping = aes(intercept = 0, slope = 1), linetype = "dashed") + 
-  stat_cor(precip_data2, mapping = aes(x = Rain.y, y = Rain.x), cor.coef.name = "r", method="pearson")
+  stat_cor(Norrveda_precip, mapping = aes(x = Rain.y, y = Rain.x), cor.coef.name = "r", method="pearson")
 #Final plot
-p_final_precip <- (precip_plot2|precip_plot) & plot_annotation(tag_levels = 'a') &
+p_final_precip <- (p_Norrveda_precip|p_Vallnora_precip) & plot_annotation(tag_levels = 'a') &
   theme(plot.tag.position = "topleft",
         plot.tag = element_text(size = 10, hjust = 0, vjust = 0)) &
   theme(plot.tag = element_text(face = 'bold')) + 
@@ -949,10 +931,11 @@ setwd(dir)
 #------------------------------------------------------------------------------------------------------------
 # TAXA MASS REGRESSIONS #
 Regression_data <- Phytoplankton_after_ice_out_mean
+#Calculate dominant taxa
 Dominant_taxa <- Regression_data %>% filter(Month == 4) %>% group_by(Genus, Month) %>% reframe(mean_biomass = mean(mean_biomass)) %>% arrange(-mean_biomass)
 #Replace NA with 0 to calculate mean
 Regression_data$mean_biomass[is.na(Regression_data$mean_biomass)] <- 0
-#Count each occurence of taxa to check that they are the same no. to start with
+#Count each occurrence of taxa to check that they are the same no. to start with
 Regression_data_count <- Regression_data %>% group_by(Genus, Month) %>% mutate(n = n())
 remove(Regression_data_count)
 #When biomass is not 0, count no occasions
