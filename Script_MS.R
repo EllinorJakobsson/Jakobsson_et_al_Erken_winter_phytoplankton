@@ -109,6 +109,7 @@ Snow_chla_data$Month <- as.numeric(Snow_chla_data$Month)
 Snow_chla_data$Month_abbrev <- month.abb[Snow_chla_data$Month]
 Snow_chla_data$Month_abbrev <- factor(Snow_chla_data$Month_abbrev, levels = c("Dec", "Jan", "Feb", "Mar", "Apr"))
 Snow_chla_data$Winter_year <- as.numeric(Snow_chla_data$Winter_year)
+
 #------------------------------------------------------Plot snow and chl-a
 #January
 data = filter(Snow_chla_data, Month_abbrev == "Jan")
@@ -297,20 +298,18 @@ Chla_after_ice_out$Month_abb <- factor(Chla_after_ice_out$Month_abb, levels = c(
 # Rsqr values
 Ice_period_table_r <- Chla_after_ice_out %>% group_by(Month) %>% lm_table(Mean_chla ~ `Length Ice Cover (days)`) %>%
   select(Month, Rsqr_adj) %>% rename("R2" = "Rsqr_adj") %>%
-  mutate(R2 = round(R2, 2))
+  mutate(R2 = round(R2, 4))
 # p values
 Ice_period_table_p <- Chla_after_ice_out  %>% nest(data = -c(Month)) %>%
   mutate(model = map(data, ~lm(Mean_chla ~ `Length Ice Cover (days)`, data = .)), tidied = map(model, tidy)) %>%
   unnest(tidied) %>% filter(term == "`Length Ice Cover (days)`") %>%
   select(Month, p.value) %>%
-  rename("p" = "p.value") %>% mutate(p_adj = round(p.adjust(p, method = "holm"), 3)) #Adjust for multiple testing?
-
-
+  rename("p" = "p.value")
 #---------------------------ICE ON DOY
 # Rsqr values
 Ice_on_table_r <- Chla_after_ice_out %>% group_by(Month) %>% lm_table(Mean_chla ~ Ice_on_DOY) %>%
   select(Month, Rsqr_adj) %>% rename("R2" = "Rsqr_adj") %>%
-  mutate(R2 = round(R2, 2))
+  mutate(R2 = round(R2, 4))
 # p values
 Ice_on_table_p <- Chla_after_ice_out  %>% nest(data = -c(Month)) %>%
   mutate(model = map(data, ~lm(Mean_chla ~ Ice_on_DOY, data = .)), tidied = map(model, tidy)) %>%
@@ -321,7 +320,7 @@ Ice_on_table_p <- Chla_after_ice_out  %>% nest(data = -c(Month)) %>%
 # Rsqr values
 Ice_off_table_r <- Chla_after_ice_out %>% group_by(Month) %>% lm_table(Mean_chla ~ Ice_off_DOY) %>%
   select(Month, Rsqr_adj) %>% rename("R2" = "Rsqr_adj") %>%
-  mutate(R2 = round(R2, 2))
+  mutate(R2 = round(R2, 4))
 # p values
 Ice_off_table_p <- Chla_after_ice_out  %>% nest(data = -c(Month)) %>%
   mutate(model = map(data, ~lm(Mean_chla ~ Ice_off_DOY, data = .)), tidied = map(model, tidy)) %>%
@@ -353,7 +352,7 @@ labpos <- Chla_after_ice_out_long %>%
   group_by(Parameter, Month_abb) %>% 
   summarise(maxheight = max(Mean_chla), 
             minheight = min(Mean_chla),
-            xpos = mean(Days_doy)) %>%
+            xpos = mean(Days_doy*0.90)) %>%
   select(Parameter, Month_abb, maxheight, minheight, xpos) %>%
   mutate(Parameter = case_when(Parameter == "Length Ice Cover (days)"~"Ice_period",
                                T~Parameter))
@@ -365,20 +364,17 @@ Ice_phenology_lm_table <- Ice_phenology_lm_table %>% select(Parameter, Month_abb
 #bind the position of labs and the lm stats to be plotted
 plotting_labs <- left_join(labpos, Ice_phenology_lm_table)
 
-plotting_labs <- plotting_labs %>% mutate(p_adj = case_when(Parameter == "Ice_off_DOY" & Month_abb == "May"~round(0.08*2,2),
-                                                            Parameter == "Ice_off_DOY" & Month_abb == "Jun"~0.170*3,
-                                                            Parameter == "Ice_on_DOY" & Month_abb == "May"~round(0.176*2,2),
-                                                            Parameter == "Ice_on_DOY" & Month_abb == "Jun"~1,
-                                                            Parameter == "Ice_period" & Month_abb == "May"~round(0.070*2,2),
-                                                            Parameter == "Ice_period" & Month_abb == "Jun"~round(0.194*3,2), T~p))
+plotting_labs <- plotting_labs
+plotting_labs <- plotting_labs
+
 # Put months in correct order
 plotting_labs$Month_abb <- factor(plotting_labs$Month_abb, levels = c("Apr", "May", "Jun"))
 Chla_after_ice_out$Month_abb <- factor(Chla_after_ice_out$Month_abb, levels = c("Apr", "May", "Jun"))
 
 #Regression plots on ice on and ice off DOY
 
-p_ice_phenology <- ggplot() + geom_point(Chla_after_ice_out, mapping = aes(x = Ice_off_DOY, y = Mean_chla), col = "#660000", size = 1.5, shape = 16) + 
-  geom_point(Chla_after_ice_out, mapping = aes(x = Ice_on_DOY, y = Mean_chla), col = "#000099", size = 1.5, shape = 17) +
+p_ice_phenology <- ggplot() + geom_point(Chla_after_ice_out, mapping = aes(x = Ice_off_DOY, y = Mean_chla), col = "#660000", size = 1, shape = 16) + 
+  geom_point(Chla_after_ice_out, mapping = aes(x = Ice_on_DOY, y = Mean_chla), col = "#000099", size = 1, shape = 17) +
   geom_smooth(filter(Chla_after_ice_out, Month_abb == "Apr"), mapping = aes(x = Ice_off_DOY, y = Mean_chla), col = "#660000", method = "lm", se = F, alpha = 0.5, linewidth = 0.3, linetype="dashed") + 
 #  geom_smooth(filter(Chla_after_ice_out), mapping = aes(x = Ice_on_DOY, y = Mean_chla), col = "#000099", method = "lm", se = F, alpha = 0.5, linewidth = 0.3, linetype="dashed") + 
   facet_wrap(~Month_abb, scales = "free_y") + 
@@ -387,18 +383,18 @@ p_ice_phenology <- ggplot() + geom_point(Chla_after_ice_out, mapping = aes(x = I
   theme(strip.text = element_text(face = "bold")) + 
   labs(x = "Day-of-the-year") +
   geom_text(filter(plotting_labs, Parameter != "Ice_period"),
-            mapping = aes(x = xpos, y = minheight + 0.85 * (maxheight - minheight), label = paste0("p = ", round(p_adj, 3), ",\nR� = ", round(R2, 2))),
+            mapping = aes(x = xpos, y = minheight + 0.85 * (maxheight - minheight), label = paste0("p = ", round(p, 3), ",\nR� = ", format(round(R2, 2), scientific = F ))),
             family = "serif", fontface = "italic", size = 2.5)
 
 
 p_Ice_period <- ggplot() + 
   geom_smooth(filter(Chla_after_ice_out, Month_abb == "Apr"), mapping = aes(x = `Length Ice Cover (days)`, y = Mean_chla), col = "black",method = "lm", se = F, linewidth = 0.5, alpha = 0.5, linetype="dashed") +
-  geom_point(Chla_after_ice_out, mapping = aes(x = `Length Ice Cover (days)`, y = Mean_chla), col = "black", size = 1.5) +
+  geom_point(Chla_after_ice_out, mapping = aes(x = `Length Ice Cover (days)`, y = Mean_chla), col = "black", size = 1) +
   facet_wrap(~Month_abb, scales = "free_y") + theme_bw() +
   labs(y = expression(paste("Chl-"*alpha*" ("*mu*"g "*L^-1*")")), x = "Ice cover period (days)") + 
   theme(strip.text = element_text(face = "bold"))  +
   geom_text(filter(plotting_labs, Parameter == "Ice_period"),
-            mapping = aes(x = xpos*0.5, y = minheight + 0.85 * (maxheight - minheight), label = paste0("p = ", round(p_adj, 3), ",\nR� = ", round(R2, 2))),
+            mapping = aes(x = xpos*0.5, y = minheight + 0.85 * (maxheight - minheight), label = paste0("p = ", round(p, 2), ",\nR� = ", format(round(R2, 2), scientific = F))),
             family = "serif", fontface = "italic", size = 2.5)
 
 p_final_DOY_box <- p_Ice_period/p_ice_phenology + plot_layout(guides = "collect") & theme(legend.position = "top") &
@@ -416,7 +412,7 @@ p_final_DOY_box
 dev.off()
 
 setwd(fig_dir)
-tiff("Figure_2.tiff", width=12, height=9, unit = "cm", res = 600)
+tiff("Figure_2.tiff", width=12, height=9, unit = "cm", res = 1200)
 p_final_DOY_box 
 dev.off()
 
@@ -543,7 +539,7 @@ Mixo_lm <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group 
 summary(Mixo_lm) #0.39
 #Mixo_lm1 <- as.data.frame(Mixo_lm$coefficients[,4])[2,]
 Mixo_lm1 <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group == "Mixotrophs" & Month == 1))
-p_val <- round((summary(Mixo_lm1)$coefficients[,4][2])*4, 3) #Multiply by 4 for Holms correction and round with three decimals
+p_val <- round((summary(Mixo_lm1)$coefficients[,4][2]), 3)
 rsqrd <- round(summary(Mixo_lm1)$adj.r.squared, 2)
 coeffs1 <- as.data.frame(cbind(p_val, rsqrd))
 # Log transformed
@@ -553,10 +549,11 @@ Auto_lm <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group 
 summary(Auto_lm) #0.43
 #Auto_lm1 <- as.data.frame(Auto_lm$coefficients[,4])[2,]
 Auto_lm1 <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group == "Autotrophs" & Month == 1))
-p_val <- round((summary(Auto_lm1)$coefficients[,4][2])*3, 3) #Multiply by 3 for Holms correction and round with three decimals
-rsqrd <- round(summary(Auto_lm1)$adj.r.squared, 3)
+p_val <- round((summary(Auto_lm1)$coefficients[,4][2]), 3)
+rsqrd <- round(summary(Auto_lm1)$adj.r.squared, 2)
 coeffs2 <- as.data.frame(cbind(p_val, rsqrd))
 # Log transformed
+
 
 #----------------Feb
 Mixo_lm <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group == "Mixotrophs" & Month == 2))
@@ -564,7 +561,7 @@ Mixo_lm <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group 
 summary(Mixo_lm) #0.92
 #Mixo_lm2 <- as.data.frame(Mixo_lm$coefficients[,4])[2,]
 Mixo_lm2 <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group == "Mixotrophs" & Month == 2))
-p_val <- round((summary(Mixo_lm2)$coefficients[,4][2])*6, 3) #Multiply by 6 for Holms correction and round with three decimals
+p_val <- round((summary(Mixo_lm2)$coefficients[,4][2]), 3)
 rsqrd <- round(summary(Mixo_lm2)$adj.r.squared, 2)
 coeffs3 <- as.data.frame(cbind(p_val, rsqrd))
 # Log transformed
@@ -574,8 +571,8 @@ Auto_lm <- lm(Mean_feeding~Mean_snow, data = filter(Perc, Functional_group == "A
 summary(Auto_lm) #0.02
 #Auto_lm2 <- as.data.frame(Auto_lm$coefficients[,4])[2,]
 Auto_lm2 <- lm(Mean_feeding~Mean_snow, data = filter(Perc, Functional_group == "Autotrophs" & Month == 2))
-p_val <- round((summary(Auto_lm2)$coefficients[,4][2]), 3) #Multiply by 1 for Holms correction and round with three decimals
-rsqrd <- round(summary(Auto_lm2)$adj.r.squared, 3)
+p_val <- round((summary(Auto_lm2)$coefficients[,4][2]), 3) 
+rsqrd <- round(summary(Auto_lm2)$adj.r.squared, 2)
 coeffs4 <- as.data.frame(cbind(p_val, rsqrd))
 # Not log transformed 
 
@@ -585,8 +582,8 @@ Mixo_lm <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group 
 summary(Mixo_lm) #0.51
 #Mixo_lm3 <- as.data.frame(Mixo_lm$coefficients[,4])[2,]
 Mixo_lm3 <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group == "Mixotrophs" & Month == 3))
-p_val <- round((summary(Mixo_lm3)$coefficients[,4][2])*5, 3) #Multiply by 2 for Holms correction and round with three decimals
-rsqrd <- round(summary(Mixo_lm3)$adj.r.squared, 3)
+p_val <- round((summary(Mixo_lm3)$coefficients[,4][2]), 3) 
+rsqrd <- round(summary(Mixo_lm3)$adj.r.squared, 2)
 coeffs5 <- as.data.frame(cbind(p_val, rsqrd))
 # Log transformed
 
@@ -595,8 +592,8 @@ Auto_lm <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group 
 summary(Auto_lm) #0.08
 #Auto_lm3 <- as.data.frame(Auto_lm$coefficients[,4])[2,]
 Auto_lm3 <- lm(log(Mean_feeding)~Mean_snow, data = filter(Perc, Functional_group == "Autotrophs" & Month == 3))
-p_val <- round((summary(Auto_lm3)$coefficients[,4][2])*2, 3) #Multiply by 2 for Holms correction and round with three decimals
-rsqrd <- round(summary(Auto_lm3)$adj.r.squared, 3)
+p_val <- round((summary(Auto_lm3)$coefficients[,4][2]), 3) #Multiply by 2 for Holms correction and round with three decimals
+rsqrd <- round(summary(Auto_lm3)$adj.r.squared, 2)
 coeffs6 <- as.data.frame(cbind(p_val, rsqrd))
 # Log tranformed
 
@@ -604,6 +601,7 @@ coeffs6 <- as.data.frame(cbind(p_val, rsqrd))
 coefficients_all <- rbind(coeffs1, coeffs2, coeffs3, coeffs4, coeffs5, coeffs6)
 coefficients_all$Functional_group <- c("Mixotrophs", "Autotrophs","Mixotrophs", "Autotrophs","Mixotrophs", "Autotrophs")
 coefficients_all$Month <- c(1,1,2,2,3,3)
+coefficients_all$p_adj <- p.adjust(coefficients_all$p_val, method = "holm")
 
 # generate position of labs for plot
 labpos <- filter(Perc, Functional_group != "Heterotrophs") %>% 
@@ -653,7 +651,7 @@ p_absolute_mixotroph_Jan <- ggplot() +
         strip.text.x = element_blank(),
         strip.text.x.top = element_blank()) +
   theme(strip.text = element_text(face = "bold")) + 
-  geom_text(filter(Perc, Month_abb == "Jan"), mapping = aes(x = 40, y = 10, label = paste0("p = ", format(round(p_val, 2), scientific = F), ",\nR� = ", round(rsqrd, 2))),
+  geom_text(filter(Perc, Month_abb == "Jan"), mapping = aes(x = 40, y = 10, label = paste0("p = ", format(round(p_adj, 2), scientific = F), ",\nR� = ", round(rsqrd, 2))),
           family = "serif", fontface = "italic", size = 2.5) +
   facet_grid2(Month_abb~`Trophic identity`, axes = "all") +
   scale_y_continuous(trans = "log10") +
@@ -669,9 +667,8 @@ p_absolute_mixotroph_Feb <- ggplot() +
         strip.text.x = element_blank(),
         strip.text.x.top = element_blank()) +
   theme(strip.text = element_text(face = "bold")) +
-  geom_text(filter(Perc, Month_abb == "Feb"), mapping = aes(x = 40, y = 35, label = paste0("p = ", format(round(p_val, 2), scientific = F), ",\nR� = ", round(rsqrd, 2))),
+  geom_text(filter(Perc, Month_abb == "Feb"), mapping = aes(x = 40, y = 35, label = paste0("p = ", format(round(p_adj, 2), scientific = F), ",\nR� = ", round(rsqrd, 2))),
           family = "serif", fontface = "italic", size = 2.5) +
-  geom_smooth(filter(Perc, Month_abb == "Feb" & Functional_group == "Autotrophs"), mapping = aes(x = Mean_snow, y = Mean_feeding), se = F, linewidth = 0.3,linetype = "dotted", method = "lm", col = "black") +
   facet_grid2(Month_abb~Functional_group, scales = "free", independent = T) +
   lims(x=c(0,55)) +
   facetted_pos_scales(y = list(Functional_group == "Mixotrophs" ~ scale_y_continuous(trans = "log10"))) + 
@@ -687,7 +684,7 @@ p_absolute_mixotroph_Mar <- ggplot() +
         strip.text.x = element_blank(),
         strip.text.x.top = element_blank()) +
   theme(strip.text = element_text(face = "bold")) + 
-  geom_text(filter(Perc, Month_abb == "Mar"), mapping = aes(x = 40, y = 15, label = paste0("p = ", format(round(p_val, 2), scientific = F), ",\nR� = ", round(rsqrd, 2))),
+  geom_text(filter(Perc, Month_abb == "Mar"), mapping = aes(x = 40, y = 15, label = paste0("p = ", format(round(p_adj, 2), scientific = F), ",\nR� = ", round(rsqrd, 2))),
             family = "serif", fontface = "italic", size = 2.5) +
   facet_grid2(Month_abb~`Trophic identity`, axes = "all") +
   scale_y_continuous(trans = "log10") +
@@ -774,10 +771,9 @@ p_trophic_mode_final
 dev.off()
 
 setwd(fig_dir)
-tiff("Figure_3.tiff", height = 20, width=8, units = "cm", res = 600)
+tiff("Figure_3.tiff", height = 20, width=8, units = "cm", res = 1200)
 p_trophic_mode_final
 dev.off()
-
 
 
 #--------------------------------------------------------------------------------------------------------------
@@ -843,40 +839,41 @@ p9 <- ggplot() +
   theme_bw() + 
   geom_hline(yintercept=0, linetype = "dashed", color = "gray50") +
   geom_vline(xintercept=0, linetype = "dashed", color = "gray50") +
-  geom_point(data=data.scores, mapping = aes(x=CCA1, y=CCA2, col = Ice_off_DOY, shape = Month), size=4) +
+  geom_point(data=data.scores, mapping = aes(x=CCA1, y=CCA2, col = Ice_off_DOY, shape = Month), size=3) +
   scale_colour_gradient2(low = "#FDB863",
                          mid = "#B2ABD2",
                          high = "#542788",
                          midpoint = 115) + 
-  labs(shape = NULL, colour = "Ice-off", x = "", y = "CCA2 (24.5 %)") +
-  geom_segment(data = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month"), aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_text_repel(data = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month"), aes(x = CCA1, y = CCA2, label = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month")$env), nudge_y = -0.05, size = 5)
+  labs(shape = NULL, colour = "Ice-off", x = "CCA1 (36.0 %)", y = "CCA2 (24.5 %)") +
+  geom_segment(data = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month"), aes(x = 0, y = 0, xend = CCA1, yend = CCA2), color = "purple", arrow = arrow(length = unit(0.1, "cm"))) +
+  geom_text_repel(data = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month"), aes(x = CCA1, y = CCA2, label = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month")$env), color = "purple", nudge_y = -0.05, size = 3)
 
 
 p10 <- ggplot() + geom_hline(yintercept=0, linetype = "dashed", color = "gray50") +
   geom_vline(xintercept=0, linetype = "dashed", color = "gray50") +
   coord_equal() +
+  lims(x = c(-3.3, 1.2)) +
   theme_bw() +
-  geom_text(data = species.scores, aes(x = CCA1, y = CCA2, label = species.scores$species), size = 2) +
+  geom_text(data = species.scores, aes(x = CCA1, y = CCA2, label = species.scores$species), size = 1.5) +
   theme(axis.text = element_text(size = 16), axis.title = element_text(size = 18)) + 
   theme_bw() +
-  labs (x = "CCA1 (36.0 %)", y = "CCA2 (24.5 %)") + 
-  geom_segment(data = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month"), aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_text_repel(data = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month"), aes(x = CCA1, y = CCA2, label = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month")$env), nudge_y = -0.05, size = 5)
+  labs (x = "CCA1 (36.0 %)", y = "") + 
+  geom_segment(data = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month"), aes(x = 0, y = 0, xend = CCA1, yend = CCA2), color = "purple", arrow = arrow(length = unit(0.1, "cm"))) +
+  geom_text_repel(data = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month"), aes(x = CCA1, y = CCA2, label = filter(veg_1, env != "Ice_on_DOY:Ice_off_DOY" & env != "Ice_on_DOY:Month" & env != "Ice_off_DOY:Month")$env), color = "purple", nudge_y = -0.05, size = 3)
 
 
 p9 <- p9 +  
-  theme(axis.title = element_text(size = 10),
-        axis.text = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 8),
         legend.position = "top") 
 
 p10 <- p10 +
-  theme(axis.title = element_text(size = 10),
-        axis.text = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 8),
         legend.position = "top")
 
 # p_final_snow_depth_NMDS <- (p9/p10) +
@@ -889,11 +886,10 @@ p10 <- p10 +
 #   theme(plot.tag = element_text(face = 'bold'),
 #         legend.position = "right")
 
-
-p_final_ice_phenology_NMDS <- p9 + theme(plot.margin = unit(c(0,0,-1,0), "pt")) + 
+p_final_ice_phenology_NMDS <- p9 + theme(plot.margin = unit(c(0,0,-1,0), "pt")) +
   p10 + theme(plot.margin = unit(c(-1,0,0,0), "pt")) + 
-  plot_layout(ncol = 1, guides = "collect") & 
-  theme(legend.position = "right")
+  plot_layout(ncol = 2, guides = "collect") & 
+  theme(legend.position = "top")
 p_final_ice_phenology_NMDS
 
 
@@ -904,7 +900,7 @@ p_final_ice_phenology_NMDS
 dev.off()
 
 setwd(fig_dir)
-tiff("Figure_4.tiff", width=35, height=30, unit = "cm", res = 1200)
+tiff("Figure_4.tiff", width=20, height = 10, unit = "cm", res = 600)
 p_final_ice_phenology_NMDS 
 dev.off()
 
@@ -1070,7 +1066,7 @@ labpos <- data %>%
           xpos = mean(Mean_ice))
 
 #Extract model params
-p_val <- round(summary(m_2)$coefficients[,4][2]*3, 2) #Multiply by 3 for Holms correction and round with three decimals
+p_val <- round(summary(m_2)$coefficients[,4][2]*1, 2) #Multiply by 1 for Holms correction and round with three decimals
 rsqrd <- round(summary(m_2)$adj.r.squared, 2)
 coeff <- as.data.frame(cbind(p_val, rsqrd))
 
@@ -1110,7 +1106,7 @@ labpos <- data %>%
           xpos = mean(Mean_ice))
 
 #Extract model params
-p_val <- round(summary(m_3)$coefficients[,4][2], 3) #Multiply by 3 for Holms correction and round with three decimals
+p_val <- round(summary(m_3)$coefficients[,4][2]*3, 3) #Multiply by 3 for Holms correction and round with three decimals
 rsqrd <- round(summary(m_3)$adj.r.squared, 2)
 coeff <- as.data.frame(cbind(p_val, rsqrd))
 
