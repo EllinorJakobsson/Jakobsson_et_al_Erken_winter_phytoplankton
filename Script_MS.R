@@ -777,7 +777,7 @@ dev.off()
 
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 FIGURE 4: AFTER ICE OUT CCA, DOMINANT TAXA IN APRIL Updating
+#                                 FIGURE 4: AFTER ICE OUT CCA, DOMINANT TAXA IN APRIL - DONE
 #------------------------------------------------------------------------------------------------------------
 #Calculate dominant taxa in April after ice off
 Dominant_taxa <- Phytoplankton_after_ice_out_mean %>% filter(Month_abb == "Apr") %>% group_by(Genus, Month_abb, Month) %>% reframe(Mean_phyto_biomass = mean(mean_biomass))
