@@ -49,35 +49,35 @@ list.files()
 
 #Load all data files
 #Snow on ice data between 1997-2019
-Snow_on_ice <- read_excel(paste(dir, "Snow_data_on_ice.xlsx", sep = ""))
+Snow_on_ice <- read_excel(paste(dir, "Snow_data_on_ice.xlsx", sep = ""), sheet = 2)
 
 #Ice thickness data 1999-2019
-Ice_thickness <- read_excel(paste(dir, "Ice_thickness.xlsx", sep = ""))
+Ice_thickness <- read_excel(paste(dir, "Ice_thickness.xlsx", sep = ""), sheet = 2)
 
 #Ice cover period data 1997-2019
-Ice_cover_period <- read_excel(paste(dir, "/Ice_cover_period.xlsx", sep = ""))
+Ice_cover_period <- read_excel(paste(dir, "/Ice_cover_period.xlsx", sep = ""), sheet = 2)
 
 #Phytoplankton data below ice 1997-2019
-Phytoplankton_below_ice <- read_excel(paste(dir, "/Phytoplankton_below_ice.xlsx", sep = ""))
+Phytoplankton_below_ice <- read_excel(paste(dir, "/Phytoplankton_below_ice.xlsx", sep = ""), sheet = 2)
 
 #Phytoplankton biomass after ice-out 1997-2019
-Phytoplankton_after_ice_out_mean <- read_excel(paste0(dir, "/Phytoplankton_after_ice_out.xlsx"))
+Phytoplankton_after_ice_out <- read_excel(paste0(dir, "/Phytoplankton_after_ice_out.xlsx"), sheet = 2)
 
 #Chla data after ice-out 1997-2019
-Chla_after_ice_out <- read_excel(paste0(dir, "/Chla_after_ice_out_mean.xlsx"))
+Chla_after_ice_out <- read_excel(paste0(dir, "/Chla_after_ice_out.xlsx"), sheet = 2)
 
 #Write chla within ice-period
-Chla_below_ice <- read_excel(paste0(dir, "/Chla_below_ice.xlsx"))
+Chla_below_ice <- read_excel(paste0(dir, "/Chla_below_ice.xlsx"), sheet = 2)
 
 #Write summary data
-Big_data_summary <- read_excel(paste0(dir, "/Big_data_summary.xlsx")) 
+Zooplankton_nutrient_light <- read_excel(paste0(dir, "/Zooplankton_nutrient_light.xlsx"), sheet = 2) 
 
 #Precipitation data from all stations
 #Data from Svanberga precip and Vallnora precip
-Vallnora_precip <- read_excel(paste0(dir, "/Vallnora_precip.xlsx"))
+Vallnora_precip <- read_excel(paste0(dir, "/Vallnora_precip.xlsx"), sheet = 2)
 
 #Data from Svanberga precip and Norrveda precip
-Norrveda_precip <- read_excel(paste0(dir, "/Norrveda_precip.xlsx")) 
+Norrveda_precip <- read_excel(paste0(dir, "/Norrveda_precip.xlsx"), sheet = 2) 
 
 #Useful functions and defined parameters for the script
 #Read function to replace NA with 0. Used later on.
@@ -91,7 +91,7 @@ Upper_range <- as.Date(Ice_cover_period$`Ice break up`)
 Snow_on_ice$Date <- as.Date(Snow_on_ice$Date)
 
 #Calculate monthly mean of snow and chla per year and transform snow depth to cm
-Mean_snow <- Snow_on_ice %>% select(-Datum, -Day) %>% group_by(Winter_year, Month) %>% drop_na(Snow_depth) %>%
+Mean_snow <- Snow_on_ice %>% select(-Day, -Date) %>% group_by(Winter_year, Month) %>% drop_na(Snow_depth) %>%
   reframe(Mean_snow = mean(Snow_depth)*100) #snow depth in cm
 
 Mean_chla <- Chla_below_ice %>% select(-Date, -Day) %>% group_by(Winter_year, Month) %>%
@@ -101,7 +101,7 @@ Mean_ice <- Ice_thickness %>% group_by(Winter_year, Month) %>% drop_na(Ice_thick
   reframe(Mean_ice = mean(Ice_thickness)) #Ice thickness in cm
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 FIGURE 1: PHYTOPLANKTON GROWTH (SNOW) - DONE
+#                                 FIGURE 1: PHYTOPLANKTON CHL-a ~ SNOW DEPTH
 #------------------------------------------------------------------------------------------------------------
 #Join mean snow and mean chla
 Snow_chla_data <- left_join(Mean_chla, Mean_snow, by = c("Winter_year", "Month"))
@@ -234,7 +234,7 @@ p22 <- p + #geom_function(fun = function(x) (24.905*exp(-0.07*x)), colour = "bla
                      theme_bw() +
   annotation_logticks(sides = "l") + lims(x=c(0,55)) +
   geom_text(plotting_labs,
-            mapping = aes(x = 20, y = minheight + 0.68 * (maxheight - minheight), label = paste0("p = ", format(round(p_val, 4), scientific = F), ",\nR² = ", round(rsqrd, 2))),
+            mapping = aes(x = 20, y = minheight + 0.68 * (maxheight - minheight), label = paste0("p < ", format(round(p_val, 4), scientific = F), ",\nR² = ", round(rsqrd, 2))),
             family = "serif", fontface = "italic", size = 2.5)
 
 #---------------------------------------------------------------Join plots and annotate axes
@@ -289,7 +289,7 @@ dev.off()
 setwd(dir)
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 FIGURE 2: ICE PHENOLOGY SCATTERPLOT - DONE
+#                                 FIGURE 2: CHL-a ~ ICE PHENOLOGY SCATTERPLOT 
 #------------------------------------------------------------------------------------------------------------
 #Set the correct order of months
 Chla_after_ice_out$Month_abb <- factor(Chla_after_ice_out$Month_abb, levels = c("Apr", "May", "Jun"))
@@ -418,7 +418,7 @@ dev.off()
 
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 FIGURE 3: TROPHIC MODES - DONE
+#                                 FIGURE 3: TROPHIC MODES ~ SNOW DEPTH
 #------------------------------------------------------------------------------------------------------------
 #CALCULATE FUNCTIONAL GROUP - JOIN MEAN WITH MEAN
 #Calculate sum of biomass per dat and genus
@@ -505,26 +505,26 @@ Perc2$Proportion <- Perc2$Percentage/100
 
 # Beta regression on proportion of trophic modes
 #January
-gy <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 1))
-gy_final1 <- as.data.frame(summary(gy)$coefficients$mean[-1,])
-gy_final1$Month <- "Jan"
-gy_final1$row <- rownames(gy_final1)
+betareg_trophicmode <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 1))
+betareg_trophicmode1 <- as.data.frame(summary(betareg_trophicmode)$coefficients$mean[-1,])
+betareg_trophicmode1$Month <- "Jan"
+betareg_trophicmode1$row <- rownames(betareg_trophicmode1)
 
 #February
-gy <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 2))
-gy_final2 <- as.data.frame(summary(gy)$coefficients$mean[-1,])
-gy_final2$Month <- "Feb"
-gy_final2$row <- rownames(gy_final2)
+betareg_trophicmode <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 2))
+betareg_trophicmode2 <- as.data.frame(summary(betareg_trophicmode)$coefficients$mean[-1,])
+betareg_trophicmode2$Month <- "Feb"
+betareg_trophicmode2$row <- rownames(betareg_trophicmode2)
 
 #March
-gy <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 3))
-gy_final3 <- as.data.frame(summary(gy)$coefficients$mean[-1,])
-gy_final3$Month <- "Mar"
-gy_final3$row <- rownames(gy_final3)
+betareg_trophicmode <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 3))
+betareg_trophicmode3 <- as.data.frame(summary(betareg_trophicmode)$coefficients$mean[-1,])
+betareg_trophicmode3$Month <- "Mar"
+betareg_trophicmode3$row <- rownames(betareg_trophicmode3)
 
 
 #Adjust for multiple testing of interaction effect
-final_results_trophic_modes <- rbind(gy_final1, gy_final2, gy_final3)
+final_results_trophic_modes <- rbind(betareg_trophicmode1, betareg_trophicmode2, betareg_trophicmode3)
 final_results_trophic_modes_interaction <- final_results_trophic_modes %>% filter(row == "Functional_groupMixotrophs:Mean_snow")
 final_results_trophic_modes_interaction$p_adj <- p.adjust(final_results_trophic_modes_interaction$`Pr(>|z|)`, method = "holm") #Adjust multiple testing for the interaction
 
@@ -638,8 +638,6 @@ add_logticks  <- function (base = 10, sides = "bl", scaled = TRUE,
 }
 
 
-
-library(ggh4x)
 #Plot absolute biomass in relation to snow depth
 
 p_absolute_mixotroph_Jan <- ggplot() + 
@@ -651,7 +649,7 @@ p_absolute_mixotroph_Jan <- ggplot() +
         strip.text.x = element_blank(),
         strip.text.x.top = element_blank()) +
   theme(strip.text = element_text(face = "bold")) + 
-  geom_text(filter(Perc, Month_abb == "Jan"), mapping = aes(x = 40, y = 10, label = paste0("p = ", format(round(p_adj, 2), scientific = F), ",\nR² = ", round(rsqrd, 2))),
+  geom_text(filter(Perc, Month_abb == "Jan"), mapping = aes(x = 40, y = 10, label = paste0("p = 1.00", ",\nR² = ", round(rsqrd, 2))),
           family = "serif", fontface = "italic", size = 2.5) +
   facet_grid2(Month_abb~`Trophic identity`, axes = "all") +
   scale_y_continuous(trans = "log10") +
@@ -696,7 +694,7 @@ p_absolute_mixotroph_Mar <- ggplot() +
 Perc2 <- Perc2 %>% filter(`Trophic identity` != "Heterotrophs")
 
 #Fit the betareg again
-gy1 <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 1))
+betareg_trophicmode1 <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 1))
 
 p_proportion_mixotroph_Jan <- ggplot() + 
   geom_point(filter(Perc2, Month_abb == "Jan"), mapping = aes(x = Mean_snow, y = Proportion), size = 1.5) +
@@ -706,14 +704,14 @@ p_proportion_mixotroph_Jan <- ggplot() +
   theme(strip.text = element_text(face = "bold")) + 
   facet_grid2(Month_abb~`Trophic identity`, axes = "all")+ 
   theme(plot.margin = unit(c(-1,0,-1,-1), 'lines')) + 
-  geom_line(filter(Perc2, Month == 1), mapping = aes(x = Mean_snow, y = predict(gy1, filter(Perc2, Month == 1))), 
+  geom_line(filter(Perc2, Month == 1), mapping = aes(x = Mean_snow, y = predict(betareg_trophicmode1, filter(Perc2, Month == 1))), 
             linetype = "dashed") +
   # geom_text(filter(Perc2, Month_abb == "Jan"), mapping = aes(x = 40, y = 0.75, label = paste0("p = 0.04")),
   #           family = "serif", fontface = "italic", size = 2.5) + 
   lims(x = c(0, 55))
  
 
-gy2 <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 2))
+betareg_trophicmode2 <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 2))
 
 p_proportion_mixotroph_Feb <- ggplot() + 
   geom_point(filter(Perc2, Month_abb == "Feb"), mapping = aes(x = Mean_snow, y = Proportion), size = 1.5) +
@@ -726,13 +724,13 @@ p_proportion_mixotroph_Feb <- ggplot() +
   theme(strip.text = element_text(face = "bold")) + 
   facet_grid2(Month_abb~`Trophic identity`, axes = "all")+ 
   theme(plot.margin = unit(c(-1,0,-1,-1), 'lines')) + 
-  geom_line(filter(Perc2, Month == 2), mapping = aes(x = Mean_snow, y = predict(gy2, filter(Perc2, Month == 2))), 
+  geom_line(filter(Perc2, Month == 2), mapping = aes(x = Mean_snow, y = predict(betareg_trophicmode2, filter(Perc2, Month == 2))), 
             linetype = "dashed") +
   # geom_text(filter(Perc2, Month_abb == "Feb"), mapping = aes(x = 40, y = 0.75, label = paste0("p < 0.001")),
   #           family = "serif", fontface = "italic", size = 2.5) + 
   lims(x = c(0, 55))
 
-gy3 <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 3))
+betareg_trophicmode3 <- betareg(Proportion ~ Functional_group*Mean_snow, link = "logit", data = filter(Perc2, Functional_group != "Heterotrophs" & Month == 3))
 
 
 p_proportion_mixotroph_Mar <- ggplot() + 
@@ -746,7 +744,7 @@ p_proportion_mixotroph_Mar <- ggplot() +
   theme(strip.text = element_text(face = "bold")) + 
   facet_grid2(Month_abb~`Trophic identity`, axes = "all") + 
   theme(plot.margin = unit(c(-1,0,-1,-1), 'lines')) + 
-  geom_line(filter(Perc2, Month == 3), mapping = aes(x = Mean_snow, y = predict(gy3, filter(Perc2, Month == 3))), 
+  geom_line(filter(Perc2, Month == 3), mapping = aes(x = Mean_snow, y = predict(betareg_trophicmode3, filter(Perc2, Month == 3))), 
                 linetype = "dashed") +
   # geom_text(filter(Perc2, Month_abb == "Mar"), mapping = aes(x = 40, y = 0.75, label = paste0("p = 0.016")),
   #           family = "serif", fontface = "italic", size = 2.5) + 
@@ -777,16 +775,16 @@ dev.off()
 
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 FIGURE 4: AFTER ICE OUT CCA, DOMINANT TAXA IN APRIL - DONE
+#                                 FIGURE 4: AFTER ICE OUT CCA, DOMINANT TAXA IN APRIL
 #------------------------------------------------------------------------------------------------------------
 #Calculate dominant taxa in April after ice off
-Dominant_taxa <- Phytoplankton_after_ice_out_mean %>% filter(Month_abb == "Apr") %>% group_by(Genus, Month_abb, Month) %>% reframe(Mean_phyto_biomass = mean(mean_biomass))
+Dominant_taxa <- Phytoplankton_after_ice_out %>% filter(Month_abb == "Apr") %>% group_by(Genus, Month_abb, Month) %>% reframe(Mean_phyto_biomass = mean(mean_biomass))
 # NMDS ice phenology after ice-out
 #Replace NA with 0
-Phytoplankton_after_ice_out_mean <- hybrd.rplc_if(Phytoplankton_after_ice_out_mean)
+Phytoplankton_after_ice_out <- hybrd.rplc_if(Phytoplankton_after_ice_out)
 #Order months
-Phytoplankton_after_ice_out_mean$Month_abb <- factor(Phytoplankton_after_ice_out_mean$Month_abb, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
-NMDS_data_filter <- Phytoplankton_after_ice_out_mean %>% spread(Genus, mean_biomass)
+Phytoplankton_after_ice_out$Month_abb <- factor(Phytoplankton_after_ice_out$Month_abb, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+NMDS_data_filter <- Phytoplankton_after_ice_out %>% spread(Genus, mean_biomass)
 NMDS_data_filter <- NMDS_data_filter %>% filter(Month_abb == "Apr" | Month_abb == "May" | Month_abb == "Jun") #Select only Apr-Jun (after ice-out)
 
 #Make 0 to NA and add column for month abbreviation
@@ -799,7 +797,7 @@ df_filter <- df_filter[,colSums(!is.na(df_filter)) > 0*nrow(df_filter)] #Filter 
 Phyto_snow <- hybrd.rplc_if(df_filter) #Replace NA with 0
 Phyto_snow_filter <- Phyto_snow[rowSums(Phyto_snow[,c(14:110)])>0,] #Remove samplings without any data
 NMDS_spec <- Phyto_snow_filter[, c(14:110)]
-NMDS_env <- Phyto_snow_filter[,c(1, 10, 12:13)]
+NMDS_env <- Phyto_snow_filter[,c(3:4, 11:13)]
 
 library(ggrepel)
 # CCA 
@@ -905,20 +903,20 @@ p_final_ice_phenology_NMDS
 dev.off()
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 SUPPLEMENTARY FIGURE 1: PRECIPITATION - DONE
+#                                 SUPPLEMENTARY FIGURE 1: PRECIPITATION
 #------------------------------------------------------------------------------------------------------------
-#Plot precipitation between the meterological sites
+#Plot precipitation between the meteorological sites
 p_Vallnora_precip <- ggplot() + 
-  geom_point(filter(Vallnora_precip), mapping = aes(x = Rain.y, y = Rain.x), alpha = 0.5) + labs(y = "", x = "Vallnora prec. (mm)") + 
+  geom_point(filter(Vallnora_precip), mapping = aes(x = Rain_mm_Vallnora, y = Rain_mm_Svanberga), alpha = 0.5) + labs(y = "", x = "Vallnora prec. (mm)") + 
   theme_bw() + geom_abline(mapping = aes(intercept = 0, slope = 1), linetype = "dashed") + 
-  stat_cor(Vallnora_precip, mapping = aes(x = Rain.y, y = Rain.x), cor.coef.name = "r", method="pearson") + 
+  stat_cor(Vallnora_precip, mapping = aes(x = Rain_mm_Svanberga, y = Rain_mm_Vallnora), cor.coef.name = "r", method="pearson") + 
   theme(axis.text.y = element_blank())
 
 p_Norrveda_precip <- ggplot() + 
-  geom_point(Norrveda_precip, mapping = aes(x = Rain.y, y = Rain.x), alpha = 0.5) + 
+  geom_point(Norrveda_precip, mapping = aes(x = Rain_mm_Svanberga, y = Rain_mm_Norrveda), alpha = 0.5) + 
   labs(y = "Svanberga prec. (mm)", x = "Norrveda prec. (mm)") + 
   theme_bw() + geom_abline(mapping = aes(intercept = 0, slope = 1), linetype = "dashed") + 
-  stat_cor(Norrveda_precip, mapping = aes(x = Rain.y, y = Rain.x), cor.coef.name = "r", method="pearson")
+  stat_cor(Norrveda_precip, mapping = aes(x = Rain_mm_Svanberga, y = Rain_mm_Norrveda), cor.coef.name = "r", method="pearson")
 
 #Final plot
 p_final_precip <- (p_Norrveda_precip|p_Vallnora_precip) & plot_annotation(tag_levels = 'a') &
@@ -942,7 +940,7 @@ dev.off()
 setwd(dir)
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 SUPPLEMENTARY FIGURE 2: ICE AND SNOW THICKNESS RELATION - DONE
+#                                 SUPPLEMENTARY FIGURE 2: ICE AND SNOW THICKNESS RELATION
 #------------------------------------------------------------------------------------------------------------
 #Calculate mean ice and snow thickness
 #Join snow and ice thickness
@@ -991,7 +989,7 @@ p_snow_ice_cor
 dev.off()
 setwd(dir)
 #--------------------------------------------------------------------------------------------------------------
-#                                 SUPPLEMENTARY FIGURE 3: ICE AND CHLA - DONE
+#                                 SUPPLEMENTARY FIGURE 3: ICE AND CHL-a
 #------------------------------------------------------------------------------------------------------------
 #ICE THICKNESS AND CHLA
 Ice_chla_data <- left_join(Mean_chla, Mean_ice, by = c("Winter_year", "Month")) %>% drop_na()
@@ -1161,8 +1159,10 @@ setwd(dir)
 #--------------------------------------------------------------------------------------------------------------
 #                                 SUPPLEMENTARY FIGURE 4: ZOOPLANKTON + NUTRIENTS
 #------------------------------------------------------------------------------------------------------------
+
+Zooplankton_nutrient_light$Month_abbrev <- factor(Zooplankton_nutrient_light$Month_abbrev, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun"))
 #Plot all variables
-p_zoops <- ggplot(filter(Big_data_summary, Taxa == "Zooplankton"), mapping = aes(x = Month_abbrev, y = Biomass)) +
+p_zoops <- ggplot(filter(Zooplankton_nutrient_light, Taxa == "Zooplankton"), mapping = aes(x = Month_abbrev, y = Biomass)) +
   geom_boxplot(fill = "white", outlier.shape = NA) +
   geom_point(size = 1) + 
   theme_bw() + theme(strip.text = element_text(face = "bold"),
@@ -1172,7 +1172,7 @@ p_zoops <- ggplot(filter(Big_data_summary, Taxa == "Zooplankton"), mapping = aes
   facet_wrap(~Taxa, scales = "free_y") + labs(x = "", y = expression("Biovolume (mm"^3*" L"^-1*")")) + 
   scale_x_discrete(labels=c("J", "F", "M", "A", "M", "J"))
 
-p_phyto <- ggplot(filter(Big_data_summary, Taxa == "Phytoplankton"), mapping = aes(x = Month_abbrev, y = Biomass)) +
+p_phyto <- ggplot(filter(Zooplankton_nutrient_light, Taxa == "Phytoplankton"), mapping = aes(x = Month_abbrev, y = Biomass)) +
   geom_boxplot(fill = "white", outlier.shape = NA) +
   geom_point(size = 1) + 
   theme_bw() + theme(strip.text = element_text(face = "bold"),
@@ -1184,13 +1184,13 @@ p_phyto <- ggplot(filter(Big_data_summary, Taxa == "Phytoplankton"), mapping = a
 
 p_nutrients <- 
   ggplot() +
-  geom_boxplot(filter(Big_data_summary, Chemistry == "TN" | Chemistry == "TP" | Chemistry == "Si"), 
+  geom_boxplot(filter(Zooplankton_nutrient_light, Chemistry == "TN" | Chemistry == "TP" | Chemistry == "Si"), 
                mapping = aes(x = Month_abbrev, y = Concentration),
                fill = "white", outlier.shape = NA) + 
   theme_bw() + theme(strip.text = element_text(face = "bold"),
                      axis.text = element_text(size = 8),
                      axis.title = element_text(size = 10),
-                     strip.text.x = element_text(size = 8)) + geom_point(filter(Big_data_summary, Chemistry == "TN" | Chemistry == "TP" |
+                     strip.text.x = element_text(size = 8)) + geom_point(filter(Zooplankton_nutrient_light, Chemistry == "TN" | Chemistry == "TP" |
                                                                                   Chemistry == "Si"), 
                                                                          mapping = aes(x = Month_abbrev, y = Concentration), size = 1) +
   facet_wrap(~Chemistry, scales = "free_y") + 
@@ -1198,9 +1198,9 @@ p_nutrients <-
   scale_x_discrete(labels=c("J", "F", "M", "A", "M", "J"))
 
 p_temp <- ggplot() +
-  geom_boxplot(filter(Big_data_summary, Chemistry == "Temperature"), 
+  geom_boxplot(filter(Zooplankton_nutrient_light, Chemistry == "Temperature"), 
                mapping = aes(x = Month_abbrev, y = Concentration), fill = "white", outlier.shape = NA) +
-  geom_point(filter(Big_data_summary, Chemistry == "Temperature"), 
+  geom_point(filter(Zooplankton_nutrient_light, Chemistry == "Temperature"), 
              mapping = aes(x = Month_abbrev, y = Concentration), size = 1) + 
   theme_bw() + theme(strip.text = element_text(face = "bold"),
                      axis.text = element_text(size = 8),
@@ -1210,9 +1210,9 @@ p_temp <- ggplot() +
   scale_x_discrete(labels=c("J", "F", "M", "A", "M", "J"))
 
 p_light <- ggplot() +
-  geom_boxplot(filter(Big_data_summary, Chemistry == "SW radiation"), 
+  geom_boxplot(filter(Zooplankton_nutrient_light, Chemistry == "SW radiation"), 
                mapping = aes(x = Month_abbrev, y = Concentration), fill = "white", outlier.shape = NA) +
-  geom_point(filter(Big_data_summary, Chemistry == "SW radiation"), 
+  geom_point(filter(Zooplankton_nutrient_light, Chemistry == "SW radiation"), 
              mapping = aes(x = Month_abbrev, y = Concentration), size = 1) + 
   theme_bw() + theme(strip.text = element_text(face = "bold"),
                      axis.text = element_text(size = 8),
@@ -1258,10 +1258,10 @@ setwd(dir)
 
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 SUPPLEMENTARY FIGURE 5: ICE PHENOLOGY TAXA MASS CORRELATIONS - DONE
+#                                 SUPPLEMENTARY FIGURE 5: ICE PHENOLOGY TAXA MASS CORRELATIONS
 #------------------------------------------------------------------------------------------------------------
 # TAXA MASS REGRESSIONS #
-Regression_data <- Phytoplankton_after_ice_out_mean
+Regression_data <- Phytoplankton_after_ice_out
 #Calculate dominant taxa
 Dominant_taxa <- Regression_data %>% filter(Month == 4) %>% group_by(Genus, Month) %>% reframe(mean_biomass = mean(mean_biomass)) %>% arrange(-mean_biomass)
 #Replace NA with 0 to calculate mean
@@ -1378,7 +1378,7 @@ names(Correlation_table_taxa) <- c("Taxonomic group", "Genus", "Ice_phenology", 
 # setwd(dir)
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 SUPPLEMENTARY FIGURE 6: SNOW CCA - CHECK SPACING AND QUALITY
+#                                 SUPPLEMENTARY FIGURE 6: SNOW AND ICE CCA
 #------------------------------------------------------------------------------------------------------------
 #Join phytoplankton data and snow data
 Mean_phytoplankton_genera_filter <- Mean_phytoplankton_genera %>% select(-Functional_group)
@@ -1461,12 +1461,13 @@ p12 <- ggplot() +
   geom_vline(xintercept=0, linetype = "dashed", color = "gray50") +
   coord_equal() +
   theme_bw() +
-  geom_text(data = species.scores_snow, aes(x = CCA1, y = CCA2, label = species.scores_snow$species), size = 1.4) +
+  geom_text(data = species.scores_snow, aes(x = CCA1, y = CCA2, label = species.scores_snow$species), size = 2.5) +
   theme(axis.text = element_text(size = 16), axis.title = element_text(size = 18)) + 
   theme_bw() +
   labs (x = "CCA1 (64.7 %)", y = "CCA2 (20.8 %)") + 
   geom_segment(data = filter(veg_1_snow, env != "Mean_snow:Month"), aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_text_repel(data = filter(veg_1_snow, env != "Mean_snow:Month"), aes(x = CCA1, y = CCA2, label = filter(veg_1_snow, env != "Mean_snow:Month")$env), nudge_y = -0.05, size = 3)
+  geom_text_repel(data = filter(veg_1_snow, env != "Mean_snow:Month"), aes(x = CCA1, y = CCA2, label = filter(veg_1_snow, env != "Mean_snow:Month")$env), nudge_y = -0.05, size = 3) +
+  lims(x = c(-1.6, 1.8))
 
 
 p11 <- p11 +  
@@ -1564,12 +1565,13 @@ p14 <- ggplot() + geom_hline(yintercept=0, linetype = "dashed", color = "gray50"
   geom_vline(xintercept=0, linetype = "dashed", color = "gray50") +
   coord_equal() +
   theme_bw() +
-  geom_text(data = species.scores, aes(x = CCA1, y = CCA2, label = species.scores$species), size = 1.4) +
+  geom_text(data = species.scores, aes(x = CCA1, y = CCA2, label = species.scores$species), size = 2.5) +
   theme(axis.text = element_text(size = 16), axis.title = element_text(size = 18)) + 
   theme_bw() +
   labs (x = "CCA1 (53.5 %)", y = "CCA2 (39.2 %)") + 
   geom_segment(data = filter(veg_1, env != "Mean_ice:Month"), aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_text_repel(data = filter(veg_1, env != "Mean_ice:Month"), aes(x = CCA1, y = CCA2, label = filter(veg_1, env != "Mean_ice:Month")$env), nudge_y = -0.05, size = 3)
+  geom_text_repel(data = filter(veg_1, env != "Mean_ice:Month"), aes(x = CCA1, y = CCA2, label = filter(veg_1, env != "Mean_ice:Month")$env), nudge_y = -0.05, size = 3) + 
+  lims(x = c(-1.9,1.95))
 
 
 p13 <- p13 +  
@@ -1617,7 +1619,7 @@ setwd(dir)
 
 
 #--------------------------------------------------------------------------------------------------------------
-#                                 SUPPLEMENTARY FIGURE 7: Chl-a: Biomass - DONE
+#                                 SUPPLEMENTARY FIGURE 7: Chl-a: Biomass
 #------------------------------------------------------------------------------------------------------------
 # Replace Nas with 0s
 Phytoplankton_below_ice <- hybrd.rplc_if(Phytoplankton_below_ice)
@@ -1790,21 +1792,18 @@ Known_genera <- Mean_phytoplankton_genera %>% filter(Genus != "Other") %>% refra
 Perc <- (Unknown_genera/(Known_genera+Unknown_genera))*100
 
 #Caulculate dominant taxa in April after ice-off
-Dominant_taxa <- Phytoplankton_after_ice_out_mean %>% filter(Month_abb == "Apr") %>% group_by(Genus, Month_abb) %>% reframe(Mean_phyto_biomass = mean(mean_biomass))
+Dominant_taxa <- Phytoplankton_after_ice_out %>% filter(Month_abb == "Apr") %>% group_by(Genus, Month_abb) %>% reframe(Mean_phyto_biomass = mean(mean_biomass))
 
 # Calculate unknown taxa in biomass after ice-off data (Apr-Jun)
 #Replace NA with 0
-Phytoplankton_after_ice_out_mean <- hybrd.rplc_if(Phytoplankton_after_ice_out_mean)
+Phytoplankton_after_ice_out <- hybrd.rplc_if(Phytoplankton_after_ice_out)
 #Order months
-Phytoplankton_after_ice_out_mean$Month_abb <- factor(Phytoplankton_after_ice_out_mean$Month_abb, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+Phytoplankton_after_ice_out$Month_abb <- factor(Phytoplankton_after_ice_out$Month_abb, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
 #Calculate percentage
-Known_genera <- Phytoplankton_after_ice_out_mean %>% filter(Genus != "Other") %>% reframe(Biomass = sum(mean_biomass))
-Unknown_genera <- Phytoplankton_after_ice_out_mean %>% filter(Genus == "Other") %>% reframe(Biomass = sum(mean_biomass))
+Known_genera <- Phytoplankton_after_ice_out %>% filter(Genus != "Other") %>% reframe(Biomass = sum(mean_biomass))
+Unknown_genera <- Phytoplankton_after_ice_out %>% filter(Genus == "Other") %>% reframe(Biomass = sum(mean_biomass))
 Perc <- (Unknown_genera/(Known_genera+Unknown_genera))*100
 
-#Calculate samplings with 0-7.5 m instead of 0-20 m.
-Mean_chla <- Chla_below_ice %>% select(-Date, -Day) %>% group_by(Winter_year, Month, max_depth_m) %>%
-  drop_na(`Chl a_µg/l`) %>% reframe(Mean_chla = mean(`Chl a_µg/l`)) %>% filter(Month == 1 | Month == 2 | Month == 3)
 #--------------------------------------------------------------------------------------------------------------
 #                                 RESULTS: DOMINANT TAXA BELOW SNOW
 #------------------------------------------------------------------------------------------------------------
@@ -1824,7 +1823,7 @@ remove(Phyto_data, Unique_data)
 #Choose only taxa in the months Jan-Mar
 Phyto_data_final <- Phyto_data_final %>% filter(Month == 1 | Month == 2 | Month == 3)
 #Separate dates
-Snow_data <- separate(Snow_on_ice, col = "Datum", into = c("Year", "Month", "Day"))
+Snow_data <- separate(Snow_on_ice, col = "Date", into = c("Year", "Month", "Day"))
 #Calculate mean snow depth per month and winter year
 Snow_data <- Snow_data %>% group_by(Winter_year, Month) %>% reframe(Snow_depth = mean(Snow_depth)) %>%
   mutate(Month = as.numeric(Month))
